@@ -1,40 +1,61 @@
 package com.boxtrotstudio.aws;
 
-import com.boxtrotstudio.aws.common.AuxProxyMessageSender;
-import com.boxtrotstudio.aws.common.GameLiftError;
-import com.boxtrotstudio.aws.common.GameLiftErrorType;
-import com.boxtrotstudio.aws.common.GenericOutcome;
+import com.amazonaws.gameLift.protobuf.Sdk;
+import com.boxtrotstudio.aws.common.*;
+import com.boxtrotstudio.aws.model.DescribePlayerSessionsRequest;
+import com.boxtrotstudio.aws.model.GameSession;
+import com.boxtrotstudio.aws.model.PlayerSessionCreationPolicy;
 import com.boxtrotstudio.aws.utils.Async;
-import com.google.common.graph.Network;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
+import com.sun.org.apache.xpath.internal.operations.Bool;
+import io.socket.client.Ack;
+import io.socket.client.IO;
+import io.socket.client.Socket;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.management.ManagementFactory;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.concurrent.*;
+
 public class ServerState extends Async {
-    static final String HOSTNAME = "127.0.0.1";
-    static final String PORT = "5757";
-    static final String PID_KEY = "pID";
-    static final String SDK_VERSION_KEY = "sdkVersion";
-    static final String FLAVOR_KEY = "sdkLanguage";
-    static final String FLAVOR = "CSharp";
-    static final long HEALTHCHECK_TIMEOUT_SECONDS = 60 * 1000;
+    private static final String HOSTNAME = "127.0.0.1";
+    private static final String PORT = "5757";
+    private static final String PID_KEY = "pID";
+    private static final String SDK_VERSION_KEY = "sdkVersion";
+    private static final String FLAVOR_KEY = "sdkLanguage";
+    private static final String FLAVOR = "Java";
+    private static final long HEALTHCHECK_TIMEOUT_SECONDS = 60 * 1000;
 
-    AuxProxyMessageSender sender;
-    Network network;
+    private AuxProxyMessageSender sender;
+    private Network network;
 
-    ProcessParameters processParameters;
-    boolean processReady = false;
-    String gameSessionId;
-    Logger log;
+    private ProcessParameters processParameters;
+    private boolean processReady = false;
+    private String gameSessionId;
+    private Logger logger = LogManager.getLogger(ServerState.class);
 
-    static volatile boolean networkInitialized = false;
-    public static final ServerState INSTANCE = new ServerState();
+    private volatile boolean networkInitialized = false;
 
-    ServerState() { }
+
+    public static final ServerState DEFULT_INSTANCE = new ServerState();
+
+    public ServerState() { }
 
     private void debug(String message) {
-        if (log != null) {
-            log.debug(message);
+        if (logger != null) {
+            logger.debug(message);
         }
-        System.err.println(message);
+    }
+
+    public Logger getLogger() {
+        return logger;
+    }
+
+    public void setLogger(Logger logger) {
+        this.logger = logger;
     }
 
     public GenericOutcome processReady(ProcessParameters parameters) {
@@ -47,14 +68,22 @@ public class ServerState extends Async {
 
         GenericOutcome result = sender.processReady(parameters.getPort(), parameters.getLogParameters().getPaths());
 
-        runAsync(() -> {
-            while (processReady) {
-                runAsync(this::reportHealth);
-                try {
-                    Thread.sleep(HEALTHCHECK_TIMEOUT_SECONDS);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    break;
+        runAsync(new Runnable() {
+            @Override
+            public void run() {
+                while (processReady) {
+                    runAsync(new Runnable() {
+                        @Override
+                        public void run() {
+                            reportHealth();
+                        }
+                    });
+                    try {
+                        Thread.sleep(HEALTHCHECK_TIMEOUT_SECONDS);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        break;
+                    }
                 }
             }
         });
@@ -80,7 +109,186 @@ public class ServerState extends Async {
         return sender.activateGameSession(gameSessionId);
     }
 
-    public void reportHealth() {
+    public GenericOutcome terminateGameSession() {
+        if (!networkInitialized) {
+            return new GenericOutcome(new GameLiftError(GameLiftErrorType.NETWORK_NOT_INITIALIZED));
+        }
+        if (gameSessionId == null || gameSessionId.equals("")) {
+            return new GenericOutcome(new GameLiftError(GameLiftErrorType.GAMESESSION_ID_NOT_SET));
+        }
 
+        return sender.terminateGameSession(gameSessionId);
+    }
+
+    public StringOutcome getGameSessionId() {
+        if (gameSessionId == null || gameSessionId.equals("")) {
+            return new StringOutcome(new GameLiftError(GameLiftErrorType.GAMESESSION_ID_NOT_SET));
+        }
+
+        return new StringOutcome(gameSessionId);
+    }
+
+    public GenericOutcome updatePlayerSessionCreationPolicy(PlayerSessionCreationPolicy policy) {
+        if (!networkInitialized) {
+            return new GenericOutcome(new GameLiftError(GameLiftErrorType.NETWORK_NOT_INITIALIZED));
+        }
+        if (gameSessionId == null || gameSessionId.equals("")) {
+            return new GenericOutcome(new GameLiftError(GameLiftErrorType.GAMESESSION_ID_NOT_SET));
+        }
+
+        return sender.updatePlayerSessionCreationPolicy(gameSessionId, policy);
+    }
+
+    public GenericOutcome acceptPlayerSession(String playerSessionId) {
+        if (!networkInitialized) {
+            return new GenericOutcome(new GameLiftError(GameLiftErrorType.NETWORK_NOT_INITIALIZED));
+        }
+        if (gameSessionId == null || gameSessionId.equals("")) {
+            return new GenericOutcome(new GameLiftError(GameLiftErrorType.GAMESESSION_ID_NOT_SET));
+        }
+
+        return sender.acceptPlayerSession(playerSessionId, gameSessionId);
+    }
+
+    public GenericOutcome removePlayerSeession(String playerSessionId) {
+        if (!networkInitialized) {
+            return new GenericOutcome(new GameLiftError(GameLiftErrorType.NETWORK_NOT_INITIALIZED));
+        }
+        if (gameSessionId == null || gameSessionId.equals("")) {
+            return new GenericOutcome(new GameLiftError(GameLiftErrorType.GAMESESSION_ID_NOT_SET));
+        }
+
+        return sender.removePlayerSession(playerSessionId, gameSessionId);
+    }
+
+    public DescribePlayerSessionsOutcome describePlayerSessions(DescribePlayerSessionsRequest request) {
+        debug("Describing player sessions for playerSessionId " + request.getPlayerSessionId());
+
+        if (!networkInitialized) {
+            return new DescribePlayerSessionsOutcome(new GameLiftError(GameLiftErrorType.NETWORK_NOT_INITIALIZED));
+        }
+
+        return sender.describePlayerSessions(request);
+    }
+
+    private void reportHealth() {
+        debug("Reporting health using the OnHealthCheck callback.");
+        Future<Boolean> future = runAsync(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                return processParameters.healthCheck();
+            }
+        });
+
+        try {
+            boolean result = future.get(HEALTHCHECK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            debug("Received health response from the server process: " + result);
+
+            sender.reportHealth(result);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            debug("Interrupted waiting for health response from the server process. Reporting as unhealthy.");
+            sender.reportHealth(false);
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+            debug("Errored waiting for health response from the server process. Reporting as unhealthy.");
+            sender.reportHealth(false);
+        } catch (TimeoutException e) {
+            debug("Timed out waiting for health response from the server process. Reporting as unhealthy.");
+            sender.reportHealth(false);
+        }
+    }
+
+    GenericOutcome initNetworking() {
+        if (!networkInitialized) {
+            String url = "http://" + HOSTNAME + ":" + PORT;
+            String queryString = PID_KEY + "=" + getProcessID() + "&" +
+                                SDK_VERSION_KEY + "=" + GameLiftServerAPI.SDK_VERSION + "&" +
+                                FLAVOR_KEY + "=" + FLAVOR;
+
+            IO.Options options = new IO.Options();
+            options.query = queryString;
+            options.reconnection = false;
+            options.transports = new String[] { "websocket" };
+
+            try {
+                Socket socket = IO.socket(url, options);
+                sender = new AuxProxyMessageSender(socket);
+                network = new Network(socket, this);
+                GenericOutcome result = network.connect();
+                networkInitialized = result.isSuccess();
+                return result;
+            } catch (URISyntaxException e) {
+                return new GenericOutcome(new GameLiftError(GameLiftErrorType.LOCAL_CONNECTION_FAILED, e));
+            }
+        }
+
+        return new GenericOutcome();
+    }
+
+    public String getProcessID() {
+        return ManagementFactory.getRuntimeMXBean().getName().split("@")[0]; // --> 742912@localhost
+    }
+
+    void onStartGameSession(final String rawGameSession, Ack ack) {
+        debug("ServerState got the startGameSession signal. rawGameSession : " + rawGameSession);
+
+        if (!processReady) {
+            debug("Got a game session on inactive process. Sending false ack.");
+            ack.call(false);
+            return;
+        }
+
+        debug("Sending true ack.");
+        ack.call(true);
+
+        runAsync(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    //Parse message
+                    Sdk.GameSession.Builder builder = Sdk.GameSession.newBuilder();
+                    JsonFormat.parser().merge(rawGameSession, builder);
+                    Sdk.GameSession parsed = builder.build();
+
+                    //Convert to model
+                    GameSession session = new GameSession();
+                    session.setName(parsed.getName());
+                    session.setFleetId(parsed.getFleetId());
+                    session.setGameSessionId(parsed.getGameSessionId());
+                    session.setMaximumPlayerSessionCount(parsed.getGamePropertiesCount());
+
+                    session.setGameProperties(new HashMap<String, String>());
+                    for (int i = 0; i < parsed.getGamePropertiesCount(); i++) {
+                        Sdk.GameProperty property = parsed.getGameProperties(i);
+
+                        session.addGameProperty(property.getKey(), property.getValue());
+                    }
+
+                    //Save and invoke onGameSessionStarted
+                    gameSessionId = session.getGameSessionId();
+                    processParameters.gameSessionStarted(session);
+
+                } catch (InvalidProtocolBufferException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    void onTerminateProcess() {
+        debug("Handler got the terminateProcess signal.");
+        runAsync(new Runnable() {
+            @Override
+            public void run() {
+                processParameters.processTerminated();
+            }
+        });
+    }
+
+    public void shutdown() {
+        networkInitialized = false;
+        network.disconnect();
+        processReady = false;
     }
 }

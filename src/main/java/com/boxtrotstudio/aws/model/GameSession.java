@@ -48,4 +48,12 @@ public class GameSession {
     public void setGameProperties(HashMap<String, String> gameProperties) {
         this.gameProperties = gameProperties;
     }
+
+    public void addGameProperty(String key, String value) {
+        this.gameProperties.put(key, value);
+    }
+
+    public String getGameProperty(String key) {
+        return this.gameProperties.get(key);
+    }
 }

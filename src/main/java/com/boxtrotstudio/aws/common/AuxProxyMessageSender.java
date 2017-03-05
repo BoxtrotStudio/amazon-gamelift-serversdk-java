@@ -19,6 +19,10 @@ public class AuxProxyMessageSender {
 
     private Socket socket;
 
+    public AuxProxyMessageSender(Socket socket) {
+        this.socket = socket;
+    }
+
     private DescribePlayerSessionsResult transformResponse(Sdk.DescribePlayerSessionsResponse response) {
         DescribePlayerSessionsResult result = new DescribePlayerSessionsResult();
         result.setNextToken(response.getNextToken());
