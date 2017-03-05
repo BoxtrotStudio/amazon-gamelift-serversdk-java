@@ -8,7 +8,6 @@ import com.boxtrotstudio.aws.model.PlayerSessionCreationPolicy;
 import com.boxtrotstudio.aws.utils.Async;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import io.socket.client.Ack;
 import io.socket.client.IO;
 import io.socket.client.Socket;
@@ -216,7 +215,7 @@ public class ServerState extends Async {
                 sender = new AuxProxyMessageSender(socket);
                 network = new Network(socket, this);
                 GenericOutcome result = network.connect();
-                networkInitialized = result.isSuccess();
+                networkInitialized = result.isSuccessful();
                 return result;
             } catch (URISyntaxException e) {
                 return new GenericOutcome(new GameLiftError(GameLiftErrorType.LOCAL_CONNECTION_FAILED, e));

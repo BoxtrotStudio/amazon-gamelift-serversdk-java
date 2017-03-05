@@ -17,7 +17,7 @@ public class GenericOutcome {
         return error;
     }
 
-    public boolean isSuccess() {
+    public boolean isSuccessful() {
         return success;
     }
 
