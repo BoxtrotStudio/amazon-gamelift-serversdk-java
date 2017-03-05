@@ -1,8 +1,17 @@
 package com.boxtrotstudio.aws.common;
 
 public class DescribePlayerSessionsOutcome extends GenericOutcome {
-    public static final int MAX_PLAYER_SESSIONS = 1024;
+    private DescribePlayerSessionsResult result;
 
-    private String nextToken;
+    public DescribePlayerSessionsOutcome(GameLiftError gameLiftError) {
+        super(gameLiftError);
+    }
 
+    public DescribePlayerSessionsOutcome(DescribePlayerSessionsResult result) {
+        this.result = result;
+    }
+
+    public DescribePlayerSessionsResult getResult() {
+        return result;
+    }
 }

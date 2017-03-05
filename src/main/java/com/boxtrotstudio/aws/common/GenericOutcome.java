@@ -20,4 +20,8 @@ public class GenericOutcome {
     public boolean isSuccess() {
         return success;
     }
+
+    public void setError(GameLiftError error) {
+        this.error = error;
+    }
 }

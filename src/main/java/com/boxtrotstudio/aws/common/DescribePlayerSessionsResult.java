@@ -1,4 +1,6 @@
-package com.boxtrotstudio.aws.model;
+package com.boxtrotstudio.aws.common;
+
+import com.boxtrotstudio.aws.common.PlayerSession;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,11 +11,13 @@ public class DescribePlayerSessionsResult {
     private String NextToken;
     private List<PlayerSession> playerSessions = new ArrayList<PlayerSession>();
 
+    DescribePlayerSessionsResult() { }
+
     public String getNextToken() {
         return NextToken;
     }
 
-    public void setNextToken(String nextToken) {
+    void setNextToken(String nextToken) {
         NextToken = nextToken;
     }
 
@@ -21,7 +25,7 @@ public class DescribePlayerSessionsResult {
         return playerSessions;
     }
 
-    public void setPlayerSessions(List<PlayerSession> playerSessions) {
+    void setPlayerSessions(List<PlayerSession> playerSessions) {
         this.playerSessions = playerSessions;
     }
 

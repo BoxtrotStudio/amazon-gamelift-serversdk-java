@@ -1,4 +1,6 @@
-package com.boxtrotstudio.aws.model;
+package com.boxtrotstudio.aws.common;
+
+import com.boxtrotstudio.aws.model.PlayerSessionStatus;
 
 public class PlayerSession {
     private String playerId;
@@ -12,7 +14,7 @@ public class PlayerSession {
     private long terminationTime;
     private PlayerSessionStatus status;
 
-    public PlayerSession() {
+    PlayerSession() {
         port = 0;
         creationTime = 0;
         terminationTime = 0;
@@ -22,7 +24,7 @@ public class PlayerSession {
         return playerId;
     }
 
-    public void setPlayerId(String playerId) {
+    void setPlayerId(String playerId) {
         this.playerId = playerId;
     }
 
@@ -30,7 +32,7 @@ public class PlayerSession {
         return playerSessionId;
     }
 
-    public void setPlayerSessionId(String playerSessionId) {
+    void setPlayerSessionId(String playerSessionId) {
         this.playerSessionId = playerSessionId;
     }
 
@@ -38,7 +40,7 @@ public class PlayerSession {
         return gameSessionId;
     }
 
-    public void setGameSessionId(String gameSessionId) {
+    void setGameSessionId(String gameSessionId) {
         this.gameSessionId = gameSessionId;
     }
 
@@ -46,7 +48,7 @@ public class PlayerSession {
         return fleetId;
     }
 
-    public void setFleetId(String fleetId) {
+    void setFleetId(String fleetId) {
         this.fleetId = fleetId;
     }
 
@@ -54,7 +56,7 @@ public class PlayerSession {
         return ipAddress;
     }
 
-    public void setIpAddress(String ipAddress) {
+    void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
     }
 
@@ -62,7 +64,7 @@ public class PlayerSession {
         return playerData;
     }
 
-    public void setPlayerData(String playerData) {
+    void setPlayerData(String playerData) {
         this.playerData = playerData;
     }
 
@@ -70,7 +72,7 @@ public class PlayerSession {
         return port;
     }
 
-    public void setPort(int port) {
+    void setPort(int port) {
         this.port = port;
     }
 
@@ -78,7 +80,7 @@ public class PlayerSession {
         return creationTime;
     }
 
-    public void setCreationTime(long creationTime) {
+    void setCreationTime(long creationTime) {
         this.creationTime = creationTime;
     }
 
@@ -86,7 +88,7 @@ public class PlayerSession {
         return terminationTime;
     }
 
-    public void setTerminationTime(long terminationTime) {
+    void setTerminationTime(long terminationTime) {
         this.terminationTime = terminationTime;
     }
 
@@ -94,7 +96,7 @@ public class PlayerSession {
         return status;
     }
 
-    public void setStatus(PlayerSessionStatus status) {
+    void setStatus(PlayerSessionStatus status) {
         this.status = status;
     }
 }
