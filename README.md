@@ -18,6 +18,9 @@ mvn clean install
 
 ## Example code
 
-You can find a simple Java class that showcases a simple game server initialization with GameLift in
-`src/test/java/com/boxtrotstudio/examples`
+You can find a simple Java class that showcases a simple game server initialization with GameLift [here](https://github.com/BoxtrotStudio/Java-Amazon-GameLift-Server-SDK/blob/master/src/test/java/com/boxtrotstudio/examples/MyServerClass.java)
+
+## License
+
+This project is [licensed under the MIT license](https://github.com/BoxtrotStudio/Java-Amazon-GameLift-Server-SDK/blob/master/LICENSE)
 
