@@ -1,6 +1,7 @@
 package com.boxtrotstudio.aws;
 
 import com.boxtrotstudio.aws.model.GameSession;
+import com.boxtrotstudio.aws.model.UpdateGameSession;
 import com.boxtrotstudio.aws.utils.PRunnable;
 
 import java.io.File;
@@ -14,6 +15,7 @@ public class ProcessParameters {
     private Callable<Boolean> healthCheck;
     private Runnable processTerminate;
     private PRunnable<GameSession> gameSessionStart;
+    private PRunnable<UpdateGameSession> gameSessionUpdated;
 
     public ProcessParameters(int port, LogParameters parameters) {
         this.port = port;
@@ -55,6 +57,11 @@ public class ProcessParameters {
         return this;
     }
 
+    public ProcessParameters whenGameSessionUpdates(PRunnable<UpdateGameSession> runnable) {
+        this.gameSessionUpdated = runnable;
+        return this;
+    }
+
     boolean healthCheck() {
         if (healthCheck != null) {
             try {
@@ -77,6 +84,12 @@ public class ProcessParameters {
     void gameSessionStarted(GameSession gameSession) {
         if (gameSessionStart != null) {
             gameSessionStart.run(gameSession);
+        }
+    }
+
+    void gameSessionUpdated(UpdateGameSession updatedGameSession) {
+        if (gameSessionUpdated != null) {
+            gameSessionUpdated.run(updatedGameSession);
         }
     }
 }

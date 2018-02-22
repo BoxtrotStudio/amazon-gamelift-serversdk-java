@@ -13,8 +13,8 @@ public class GameSession {
     private int port;
     private String ipAddress;
     private String gameSessionData;
-    private String MatchmakerData;
-    private String DnsName;
+    private String matchmakerData;
+    private String dnsName;
     private HashMap<String, String> gameProperties = new HashMap<String, String>();
 
     public GameSession() { }
@@ -25,50 +25,55 @@ public class GameSession {
         FleetId = sdk.getFleetId();
         MaximumPlayerSessionCount = sdk.getMaxPlayers();
         joinable = sdk.getJoinable();
+        port = sdk.getPort();
+        ipAddress = sdk.getIpAddress();
+        gameSessionData = sdk.getGameSessionData();
+        matchmakerData = sdk.getMatchmakerData();
+        dnsName = sdk.getDnsName();
         for (Sdk.GameProperty p : sdk.getGamePropertiesList()) {
             addGameProperty(p.getKey(), p.getValue());
         }
 
     }
 
-    public boolean isJoinable() {
-        return joinable;
-    }
-
-    public void setJoinable(boolean joinable) {
-        this.joinable = joinable;
-    }
-
     public String getGameSessionId() {
         return GameSessionId;
-    }
-
-    public void setGameSessionId(String gameSessionId) {
-        GameSessionId = gameSessionId;
     }
 
     public String getName() {
         return Name;
     }
 
-    public void setName(String name) {
-        Name = name;
+    public boolean isJoinable() {
+        return joinable;
     }
 
     public String getFleetId() {
         return FleetId;
     }
 
-    public void setFleetId(String fleetId) {
-        FleetId = fleetId;
-    }
-
     public int getMaximumPlayerSessionCount() {
         return MaximumPlayerSessionCount;
     }
 
-    public void setMaximumPlayerSessionCount(int maximumPlayerSessionCount) {
-        MaximumPlayerSessionCount = maximumPlayerSessionCount;
+    public int getPort() {
+        return port;
+    }
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public String getGameSessionData() {
+        return gameSessionData;
+    }
+
+    public String getMatchmakerData() {
+        return matchmakerData;
+    }
+
+    public String getDnsName() {
+        return dnsName;
     }
 
     public HashMap<String, String> getGameProperties() {
@@ -81,9 +86,5 @@ public class GameSession {
 
     public void addGameProperty(String key, String value) {
         this.gameProperties.put(key, value);
-    }
-
-    public String getGameProperty(String key) {
-        return this.gameProperties.get(key);
     }
 }

@@ -115,7 +115,7 @@ public class Network {
         socket.on("UpdateGameSession", new ServerStateListener(new P2Runnable() {
             @Override
             public void run(Object arg1, Object arg2) {
-                handler.onStartGameSession((String)arg1, (Ack)arg2);
+                handler.onUpdateGameSession((String)arg1, (Ack)arg2);
             }
         }));
     }

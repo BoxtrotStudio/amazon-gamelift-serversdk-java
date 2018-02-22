@@ -2,9 +2,7 @@ package com.boxtrotstudio.aws;
 
 import com.amazon.whitewater.auxproxy.pbuffer.Sdk;
 import com.boxtrotstudio.aws.common.*;
-import com.boxtrotstudio.aws.model.DescribePlayerSessionsRequest;
-import com.boxtrotstudio.aws.model.GameSession;
-import com.boxtrotstudio.aws.model.PlayerSessionCreationPolicy;
+import com.boxtrotstudio.aws.model.*;
 import com.boxtrotstudio.aws.utils.Async;
 import com.google.gson.Gson;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -26,7 +24,7 @@ public class ServerState extends Async {
     private static final String PID_KEY = "pID";
     private static final String SDK_VERSION_KEY = "sdkVersion";
     private static final String FLAVOR_KEY = "sdkLanguage";
-    private static final String FLAVOR = "CSharp";
+    private static final String FLAVOR = "Java";
     private static final long HEALTHCHECK_TIMEOUT_SECONDS = 60 * 1000;
 
     private AuxProxyMessageSender sender;
@@ -253,16 +251,12 @@ public class ServerState extends Async {
             public void run() {
                 try {
                     //Parse message
-                    Sdk.GameSession.Builder builder = Sdk.GameSession.newBuilder();
+                    Sdk.ActivateGameSession.Builder builder = Sdk.ActivateGameSession.newBuilder();
                     JsonFormat.parser().merge(rawGameSession, builder);
-                    Sdk.GameSession parsed = builder.build();
+                    Sdk.GameSession parsed = builder.build().getGameSession();
 
                     //Convert to model
-                    GameSession session = new GameSession();
-                    session.setName(parsed.getName());
-                    session.setFleetId(parsed.getFleetId());
-                    session.setGameSessionId(parsed.getGameSessionId());
-                    session.setMaximumPlayerSessionCount(parsed.getGamePropertiesCount());
+                    GameSession session = new GameSession(parsed);
 
                     session.setGameProperties(new HashMap<String, String>());
                     for (int i = 0; i < parsed.getGamePropertiesCount(); i++) {
@@ -295,29 +289,20 @@ public class ServerState extends Async {
         debug("Sending true ack.");
         ack.call(true);
 
-        debug("UpdateGameSession not implemented!");
-
-        /*runAsync(new Runnable() {
+        runAsync(new Runnable() {
             @Override
             public void run() {
                 Sdk.UpdateGameSession updateGameSession = new Gson().fromJson(rawUpdateGameSession, Sdk.UpdateGameSession.class);
                 GameSession session = new GameSession(updateGameSession.getGameSession());
                 gameSessionId = session.getGameSessionId();
 
+                UpdateReason updateReason = UpdateReason.getUpdateReasonForName(updateGameSession.getUpdateReason());
+
+                processParameters.gameSessionUpdated(
+                        new UpdateGameSession(session, updateReason, updateGameSession.getBackfillTicketId()));
+
             }
-        });*/
-
-        /*Task.Run(() =>
-                {
-                        Com.Amazon.Whitewater.Auxproxy.Pbuffer.UpdateGameSession updateGameSession =
-                        JsonConvert.DeserializeObject<Com.Amazon.Whitewater.Auxproxy.Pbuffer.UpdateGameSession>(rawUpdateGameSession);
-        GameSession gameSession = GameSession.ParseFromBufferedGameSession(updateGameSession.GameSession);
-        gameSessionId = gameSession.GameSessionId;
-        UpdateReason updateReason = UpdateReasonMapper.GetUpdateReasonForName(updateGameSession.UpdateReason);
-
-        processParameters.OnUpdateGameSession(
-                new UpdateGameSession(gameSession, updateReason, updateGameSession.BackfillTicketId));
-            });*/
+        });
     }
 
     void onTerminateProcess() {

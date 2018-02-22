@@ -7,6 +7,7 @@ import com.boxtrotstudio.aws.model.DescribePlayerSessionsRequest;
 import com.boxtrotstudio.aws.model.PlayerSessionCreationPolicy;
 
 public class GameLiftServerAPI {
+    //TODO Set this to 3.2.1 when everything is ported
     static final String SDK_VERSION = "3.1.5";
 
     /**
