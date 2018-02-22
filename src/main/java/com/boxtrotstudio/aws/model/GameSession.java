@@ -1,13 +1,43 @@
 package com.boxtrotstudio.aws.model;
 
+import com.amazon.whitewater.auxproxy.pbuffer.Sdk;
+
 import java.util.HashMap;
 
 public class GameSession {
     private String GameSessionId;
     private String Name;
+    private boolean joinable;
     private String FleetId;
     private int MaximumPlayerSessionCount = 0;
+    private int port;
+    private String ipAddress;
+    private String gameSessionData;
+    private String MatchmakerData;
+    private String DnsName;
     private HashMap<String, String> gameProperties = new HashMap<String, String>();
+
+    public GameSession() { }
+
+    public GameSession(Sdk.GameSession sdk) {
+        GameSessionId = sdk.getGameSessionId();
+        Name = sdk.getName();
+        FleetId = sdk.getFleetId();
+        MaximumPlayerSessionCount = sdk.getMaxPlayers();
+        joinable = sdk.getJoinable();
+        for (Sdk.GameProperty p : sdk.getGamePropertiesList()) {
+            addGameProperty(p.getKey(), p.getValue());
+        }
+
+    }
+
+    public boolean isJoinable() {
+        return joinable;
+    }
+
+    public void setJoinable(boolean joinable) {
+        this.joinable = joinable;
+    }
 
     public String getGameSessionId() {
         return GameSessionId;

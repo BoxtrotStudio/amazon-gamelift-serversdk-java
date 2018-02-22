@@ -11,55 +11,53 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Network {
-    private Socket socket;
+    private Socket socketFromAuxProxy;
+    private Socket socketToAuxProxy;
     private ServerState handler;
     private boolean connected = false;
     private final Logger logger = LogManager.getLogger(Network.class);
 
-    public Network(Socket socket, ServerState handler) {
-        this.socket = socket;
+    public Network(Socket socket, Socket socketToAuxProxy, ServerState handler) {
+        this.socketFromAuxProxy = socket;
+        this.socketToAuxProxy = socketToAuxProxy;
         this.handler = handler;
 
-        setupCallbacks();
+        setupCallbacks(socketFromAuxProxy);
+        setupCallbacks(socketToAuxProxy);
     }
 
     public synchronized GenericOutcome connect() {
+        if (performConnect(socketToAuxProxy)) {
+            if (performConnect(socketFromAuxProxy)) {
+                return new GenericOutcome();
+            }
+        }
+
+        return new GenericOutcome(new GameLiftError(GameLiftErrorType.LOCAL_CONNECTION_FAILED));
+    }
+
+    private synchronized boolean performConnect(Socket socket) {
+        connected = false;
         socket.connect();
 
         try {
             super.wait(5000);
         } catch (InterruptedException ignored) { }
 
-        if (!connected)
-            return new GenericOutcome(new GameLiftError(GameLiftErrorType.LOCAL_CONNECTION_FAILED));
-
-        return new GenericOutcome();
+        return connected;
     }
 
     public GenericOutcome disconnect() {
-        socket.disconnect();
+        socketFromAuxProxy.disconnect();
+        socketToAuxProxy.disconnect();
         return new GenericOutcome();
     }
 
-    private void setupCallbacks() {
+    private void setupCallbacks(Socket socket) {
         socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
             @Override
             public void call(Object... objects) {
                 logger.debug("Socket.io event triggered: EVENT_CONNECT");
-
-                socket.on("StartGameSession", new ServerStateListener(new P2Runnable() {
-                    @Override
-                    public void run(Object arg1, Object arg2) {
-                        handler.onStartGameSession((String)arg1, (Ack)arg2);
-                    }
-                }));
-
-                socket.on("TerminateProcess", new Emitter.Listener() {
-                    @Override
-                    public void call(Object... objects) {
-                        handler.onTerminateProcess();
-                    }
-                });
 
                 _notifyConnected();
             }
@@ -99,6 +97,27 @@ public class Network {
                 logger.debug("Socket.io event triggered: EVENT_MESSAGE, with error: " + objects[0]);
             }
         });
+
+        socket.on("StartGameSession", new ServerStateListener(new P2Runnable() {
+            @Override
+            public void run(Object arg1, Object arg2) {
+                handler.onStartGameSession((String)arg1, (Ack)arg2);
+            }
+        }));
+
+        socket.on("TerminateProcess", new Emitter.Listener() {
+            @Override
+            public void call(Object... objects) {
+                handler.onTerminateProcess();
+            }
+        });
+
+        socket.on("UpdateGameSession", new ServerStateListener(new P2Runnable() {
+            @Override
+            public void run(Object arg1, Object arg2) {
+                handler.onStartGameSession((String)arg1, (Ack)arg2);
+            }
+        }));
     }
 
     private synchronized void _notifyConnected() {

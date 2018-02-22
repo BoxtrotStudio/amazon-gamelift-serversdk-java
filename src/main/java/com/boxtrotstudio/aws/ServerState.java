@@ -1,11 +1,12 @@
 package com.boxtrotstudio.aws;
 
-import com.amazonaws.gameLift.protobuf.Sdk;
+import com.amazon.whitewater.auxproxy.pbuffer.Sdk;
 import com.boxtrotstudio.aws.common.*;
 import com.boxtrotstudio.aws.model.DescribePlayerSessionsRequest;
 import com.boxtrotstudio.aws.model.GameSession;
 import com.boxtrotstudio.aws.model.PlayerSessionCreationPolicy;
 import com.boxtrotstudio.aws.utils.Async;
+import com.google.gson.Gson;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import io.socket.client.Ack;
@@ -25,7 +26,7 @@ public class ServerState extends Async {
     private static final String PID_KEY = "pID";
     private static final String SDK_VERSION_KEY = "sdkVersion";
     private static final String FLAVOR_KEY = "sdkLanguage";
-    private static final String FLAVOR = "Java";
+    private static final String FLAVOR = "CSharp";
     private static final long HEALTHCHECK_TIMEOUT_SECONDS = 60 * 1000;
 
     private AuxProxyMessageSender sender;
@@ -205,15 +206,11 @@ public class ServerState extends Async {
                                 SDK_VERSION_KEY + "=" + GameLiftServerAPI.SDK_VERSION + "&" +
                                 FLAVOR_KEY + "=" + FLAVOR;
 
-            IO.Options options = new IO.Options();
-            options.query = queryString;
-            options.reconnection = false;
-            options.transports = new String[] { "websocket" };
-
             try {
-                Socket socket = IO.socket(url, options);
-                sender = new AuxProxyMessageSender(socket);
-                network = new Network(socket, this);
+                Socket socketToAuxProxy = IO.socket(url, createDefaults(queryString));
+                Socket socketFromAuxProxy = IO.socket(url, createDefaults(queryString));
+                sender = new AuxProxyMessageSender(socketToAuxProxy);
+                network = new Network(socketFromAuxProxy, socketToAuxProxy, this);
                 GenericOutcome result = network.connect();
                 networkInitialized = result.isSuccessful();
                 return result;
@@ -223,6 +220,16 @@ public class ServerState extends Async {
         }
 
         return new GenericOutcome();
+    }
+
+    private IO.Options createDefaults(String queryString) {
+        IO.Options options = new IO.Options();
+        options.query = queryString;
+        options.reconnection = false;
+        options.forceNew = true;
+        options.transports = new String[] { "websocket" };
+
+        return options;
     }
 
     public String getProcessID() {
@@ -273,6 +280,44 @@ public class ServerState extends Async {
                 }
             }
         });
+    }
+
+    public void onUpdateGameSession(String rawUpdateGameSession, Ack ack)
+    {
+        debug("ServerState got the updateGameSession signal. rawGameSession : " + rawUpdateGameSession);
+
+        if (!processReady)
+        {
+            debug("Got an updated game session on inactive process. Sending false ack.");
+            ack.call(false);
+            return;
+        }
+        debug("Sending true ack.");
+        ack.call(true);
+
+        debug("UpdateGameSession not implemented!");
+
+        /*runAsync(new Runnable() {
+            @Override
+            public void run() {
+                Sdk.UpdateGameSession updateGameSession = new Gson().fromJson(rawUpdateGameSession, Sdk.UpdateGameSession.class);
+                GameSession session = new GameSession(updateGameSession.getGameSession());
+                gameSessionId = session.getGameSessionId();
+
+            }
+        });*/
+
+        /*Task.Run(() =>
+                {
+                        Com.Amazon.Whitewater.Auxproxy.Pbuffer.UpdateGameSession updateGameSession =
+                        JsonConvert.DeserializeObject<Com.Amazon.Whitewater.Auxproxy.Pbuffer.UpdateGameSession>(rawUpdateGameSession);
+        GameSession gameSession = GameSession.ParseFromBufferedGameSession(updateGameSession.GameSession);
+        gameSessionId = gameSession.GameSessionId;
+        UpdateReason updateReason = UpdateReasonMapper.GetUpdateReasonForName(updateGameSession.UpdateReason);
+
+        processParameters.OnUpdateGameSession(
+                new UpdateGameSession(gameSession, updateReason, updateGameSession.BackfillTicketId));
+            });*/
     }
 
     void onTerminateProcess() {

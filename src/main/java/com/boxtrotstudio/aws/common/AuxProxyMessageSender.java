@@ -1,6 +1,6 @@
 package com.boxtrotstudio.aws.common;
 
-import com.amazonaws.gameLift.protobuf.Sdk;
+import com.amazon.whitewater.auxproxy.pbuffer.Sdk;
 import com.boxtrotstudio.aws.model.*;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -101,7 +101,7 @@ public class AuxProxyMessageSender {
         builder.setPort(port);
 
         for (int i = 0; i < filesToUpload.size(); i++) {
-            builder.setLogPathsToUpload(i, filesToUpload.get(i));
+            builder.addLogPathsToUpload(filesToUpload.get(i));
         }
 
         return emitEvent(builder.build());
@@ -196,7 +196,7 @@ public class AuxProxyMessageSender {
                                                   SettableFuture<T> future,
                                                   T genericError) {
 
-        socket.emit(message.getDescriptorForType().getFullName(), ack, message.toByteArray());
+        socket.emit(message.getDescriptorForType().getFullName(), message.toByteArray(), ack);
         try {
             return future.get(30, TimeUnit.SECONDS);
         } catch (Throwable e) {
