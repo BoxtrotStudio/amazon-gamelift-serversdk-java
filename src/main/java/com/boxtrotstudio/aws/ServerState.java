@@ -26,6 +26,7 @@ public class ServerState extends Async {
     private static final String FLAVOR_KEY = "sdkLanguage";
     private static final String FLAVOR = "Java";
     private static final long HEALTHCHECK_TIMEOUT_SECONDS = 60 * 1000;
+    private static final Gson JSON = new Gson();
 
     private AuxProxyMessageSender sender;
     private Network network;
@@ -34,6 +35,7 @@ public class ServerState extends Async {
     private boolean processReady = false;
     private String gameSessionId;
     private Logger logger = LogManager.getLogger(ServerState.class);
+    private long terminationTime;
 
     private volatile boolean networkInitialized = false;
 
@@ -167,6 +169,30 @@ public class ServerState extends Async {
         }
 
         return sender.describePlayerSessions(request);
+    }
+
+    public StartMatchBackfillOutcome BackfillMatchmaking(StartMatchBackfillRequest request)
+    {
+        if (!networkInitialized)
+        {
+            return new StartMatchBackfillOutcome(new GameLiftError(GameLiftErrorType.NETWORK_NOT_INITIALIZED));
+        }
+        else
+        {
+            return sender.BackfillMatchmaking(request);
+        }
+    }
+
+    public GenericOutcome StopMatchmaking(StopMatchBackfillRequest request)
+    {
+        if (!networkInitialized)
+        {
+            return new GenericOutcome(new GameLiftError(GameLiftErrorType.NETWORK_NOT_INITIALIZED));
+        }
+        else
+        {
+            return sender.StopMatchmaking(request);
+        }
     }
 
     private void reportHealth() {
@@ -305,11 +331,25 @@ public class ServerState extends Async {
         });
     }
 
-    void onTerminateProcess() {
-        debug("Handler got the terminateProcess signal.");
+    void onTerminateProcess(String rawTerminationTime) {
+        debug("Handler got the terminateProcess signal. rawTerminationTime time " + rawTerminationTime);
         runAsync(new Runnable() {
             @Override
             public void run() {
+                Sdk.TerminateProcess process = null;
+                try {
+                    process = JSON.fromJson(rawTerminationTime, Sdk.TerminateProcess.class);
+                } catch (Throwable ignored) { }
+
+                if (process == null) {
+                    //If termination time isn't sent from AuxProxy use now plus 5 minutes.
+                    terminationTime = System.currentTimeMillis() + (60000 * 5);
+                } else {
+                    /* TerminationTime coming from AuxProxy is seconds that have elapsed since Unix epoch time begins (00:00:00 UTC Jan 1 1970).
+                     */
+                    terminationTime = process.getTerminationTime();
+                }
+
                 processParameters.processTerminated();
             }
         });

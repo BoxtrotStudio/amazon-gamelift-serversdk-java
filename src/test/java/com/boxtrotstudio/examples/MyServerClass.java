@@ -9,6 +9,10 @@ import java.io.File;
 
 public class MyServerClass {
 
+    public static void main(String[] args) throws GameLiftError {
+        new MyServerClass().start();
+    }
+
     public void start() throws GameLiftError {
         int port = 7777;
 
