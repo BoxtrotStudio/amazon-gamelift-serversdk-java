@@ -1,6 +1,8 @@
 package com.boxtrotstudio.aws.common;
 
+import com.amazon.whitewater.auxproxy.pbuffer.Sdk;
 import com.boxtrotstudio.aws.common.PlayerSession;
+import com.boxtrotstudio.aws.model.PlayerSessionStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +13,17 @@ public class DescribePlayerSessionsResult {
     private String NextToken;
     private List<PlayerSession> playerSessions = new ArrayList<PlayerSession>();
 
-    DescribePlayerSessionsResult() { }
+    public DescribePlayerSessionsResult() { }
+
+    public DescribePlayerSessionsResult(Sdk.DescribePlayerSessionsResponse response) {
+        setNextToken(response.getNextToken());
+        setPlayerSessions(new ArrayList<PlayerSession>());
+        for (Sdk.PlayerSession session : response.getPlayerSessionsList()) {
+            PlayerSession newSession = new PlayerSession(session);
+
+            addPlayer(newSession);
+        }
+    }
 
     public String getNextToken() {
         return NextToken;

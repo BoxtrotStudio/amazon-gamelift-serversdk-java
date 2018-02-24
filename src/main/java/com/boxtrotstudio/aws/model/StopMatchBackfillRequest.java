@@ -1,5 +1,7 @@
 package com.boxtrotstudio.aws.model;
 
+import com.amazon.whitewater.auxproxy.pbuffer.Sdk;
+
 public class StopMatchBackfillRequest {
     private String ticketId;
     private String gameSessionArn;
@@ -36,5 +38,14 @@ public class StopMatchBackfillRequest {
 
     public void setMatchmakingConfigurationArn(String matchmakingConfigurationArn) {
         this.matchmakingConfigurationArn = matchmakingConfigurationArn;
+    }
+
+    public Sdk.StopMatchmakingRequest createRequest() {
+        Sdk.StopMatchmakingRequest.Builder builder = Sdk.StopMatchmakingRequest.newBuilder();
+
+        return builder.setTicketId(ticketId)
+                .setGameSessionArn(gameSessionArn)
+                .setMatchmakingConfigurationArn(matchmakingConfigurationArn)
+                .build();
     }
 }

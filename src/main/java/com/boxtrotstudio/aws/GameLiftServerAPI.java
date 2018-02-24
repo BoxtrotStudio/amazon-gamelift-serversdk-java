@@ -1,14 +1,13 @@
 package com.boxtrotstudio.aws;
 
-import com.boxtrotstudio.aws.common.DescribePlayerSessionsOutcome;
-import com.boxtrotstudio.aws.common.GenericOutcome;
-import com.boxtrotstudio.aws.common.StringOutcome;
+import com.boxtrotstudio.aws.common.*;
 import com.boxtrotstudio.aws.model.DescribePlayerSessionsRequest;
 import com.boxtrotstudio.aws.model.PlayerSessionCreationPolicy;
+import com.boxtrotstudio.aws.model.StartMatchBackfillRequest;
+import com.boxtrotstudio.aws.model.StopMatchBackfillRequest;
 
 public class GameLiftServerAPI {
-    //TODO Set this to 3.2.1 when everything is ported
-    static final String SDK_VERSION = "3.1.5";
+    static final String SDK_VERSION = "3.2.1";
 
     /**
      * @return The current SDK version.
@@ -76,6 +75,13 @@ public class GameLiftServerAPI {
     }
 
     /**
+     * @return The server's processes Epoch TerminationTime.
+     */
+    public static LongOutcome getTerminationTime() {
+        return ServerState.DEFULT_INSTANCE.getTerminationTime();
+    }
+
+    /**
      * Processes and validates a player session connection. This method should be called when a client requests a
      * connection to the server. The client should send the PlayerSessionID which it received from RequestPlayerSession
      * or GameLift::CreatePlayerSession to be passed into this function.
@@ -102,6 +108,24 @@ public class GameLiftServerAPI {
      */
     public static DescribePlayerSessionsOutcome describePlayerSessions(DescribePlayerSessionsRequest describePlayerSessionsRequest) {
         return ServerState.DEFULT_INSTANCE.describePlayerSessions(describePlayerSessionsRequest);
+    }
+
+    /**
+     * Submit a request to backfill the current match.
+     * @param request The backfill request
+     * @return The outcome of the request
+     */
+    public static StartMatchBackfillOutcome startMatchBackfill(StartMatchBackfillRequest request) {
+        return ServerState.DEFULT_INSTANCE.BackfillMatchmaking(request);
+    }
+
+    /**
+     * Submit a request to stop an outstanding request to backfill the current match.
+     * @param request The stop request
+     * @return The outcome of the request
+     */
+    public static GenericOutcome stopMatchBackfill(StopMatchBackfillRequest request) {
+        return ServerState.DEFULT_INSTANCE.StopMatchmaking(request);
     }
 
     /**

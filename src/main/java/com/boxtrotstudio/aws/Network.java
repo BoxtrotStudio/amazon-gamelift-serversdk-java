@@ -105,12 +105,12 @@ public class Network {
             }
         }));
 
-        socket.on("TerminateProcess", new Emitter.Listener() {
+        socket.on("TerminateProcess", new ServerStateListener(new P2Runnable() {
             @Override
-            public void call(Object... objects) {
-                handler.onTerminateProcess();
+            public void run(Object arg1, Object arg2) {
+                handler.onTerminateProcess((String)arg1);
             }
-        });
+        }));
 
         socket.on("UpdateGameSession", new ServerStateListener(new P2Runnable() {
             @Override

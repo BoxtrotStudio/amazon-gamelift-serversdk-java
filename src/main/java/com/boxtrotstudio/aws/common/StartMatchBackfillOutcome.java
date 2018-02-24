@@ -10,9 +10,8 @@ public class StartMatchBackfillOutcome extends GenericOutcome {
         this.result = result;
     }
 
-    public StartMatchBackfillOutcome(GameLiftError error, StartMatchBackfillResult result) {
+    public StartMatchBackfillOutcome(GameLiftError error) {
         super(error);
-        this.result = result;
     }
 
     public StartMatchBackfillResult getResult() {

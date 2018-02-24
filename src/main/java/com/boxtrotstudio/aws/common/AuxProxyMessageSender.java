@@ -9,41 +9,19 @@ import com.google.protobuf.util.JsonFormat;
 import io.socket.client.Ack;
 import io.socket.client.Socket;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class AuxProxyMessageSender {
-    public static final GenericOutcome GENERIC_ERROR = new GenericOutcome(new GameLiftError(GameLiftErrorType.LOCAL_CONNECTION_FAILED));
+    private static final GenericOutcome GENERIC_ERROR = new GenericOutcome(new GameLiftError(GameLiftErrorType.LOCAL_CONNECTION_FAILED));
     private static final DescribePlayerSessionsOutcome DESCRIBE_PLAYER_SESSION_ERROR = new DescribePlayerSessionsOutcome(new GameLiftError(GameLiftErrorType.SERVICE_CALL_FAILED));
+    private static final StartMatchBackfillOutcome START_MATCH_BACKFILL_ERROR = new StartMatchBackfillOutcome(new GameLiftError(GameLiftErrorType.SERVICE_CALL_FAILED));
+    private static final GenericOutcome STOP_MATCH_BACKFILL_ERROR = new GenericOutcome(new GameLiftError(GameLiftErrorType.SERVICE_CALL_FAILED));
 
     private Socket socket;
 
     public AuxProxyMessageSender(Socket socket) {
         this.socket = socket;
-    }
-
-    private DescribePlayerSessionsResult transformResponse(Sdk.DescribePlayerSessionsResponse response) {
-        DescribePlayerSessionsResult result = new DescribePlayerSessionsResult();
-        result.setNextToken(response.getNextToken());
-        result.setPlayerSessions(new ArrayList<PlayerSession>());
-        for (Sdk.PlayerSession session : response.getPlayerSessionsList()) {
-            PlayerSession newSession = new PlayerSession();
-            newSession.setPlayerSessionId(session.getPlayerSessionId());
-            newSession.setPlayerId(session.getPlayerId());
-            newSession.setCreationTime(session.getCreationTime());
-            newSession.setFleetId(session.getFleetId());
-            newSession.setGameSessionId(session.getGameSessionId());
-            newSession.setIpAddress(session.getIpAddress());
-            newSession.setPlayerData(session.getPlayerData());
-            newSession.setPort(session.getPort());
-            newSession.setStatus(PlayerSessionStatus.valueOf(session.getStatus()));
-            newSession.setTerminationTime(session.getTerminationTime());
-
-            result.addPlayer(newSession);
-        }
-
-        return result;
     }
 
     private Ack _createAckFunction(final SettableFuture<DescribePlayerSessionsOutcome> future) {
@@ -52,6 +30,7 @@ public class AuxProxyMessageSender {
             public void call(Object... objects) {
                 if (objects.length == 0 || objects[0] == null) {
                     future.set(new DescribePlayerSessionsOutcome(new GameLiftError(GameLiftErrorType.SERVICE_CALL_FAILED)));
+                    return;
                 }
 
                 boolean value = (boolean) objects[0];
@@ -63,7 +42,7 @@ public class AuxProxyMessageSender {
 
                         Sdk.DescribePlayerSessionsResponse response = builder.build();
 
-                        DescribePlayerSessionsResult result = transformResponse(response);
+                        DescribePlayerSessionsResult result = new DescribePlayerSessionsResult(response);
 
                         future.set(new DescribePlayerSessionsOutcome(result));
 
@@ -72,6 +51,37 @@ public class AuxProxyMessageSender {
                     }
                 } else {
                     future.set(new DescribePlayerSessionsOutcome(new GameLiftError(GameLiftErrorType.SERVICE_CALL_FAILED)));
+                }
+            }
+        };
+    }
+
+    private Ack __createAckFunction(final SettableFuture<StartMatchBackfillOutcome> future) {
+        return new Ack() {
+            @Override
+            public void call(Object... objects) {
+                if (objects.length == 0 || objects[0] == null) {
+                    future.set(new StartMatchBackfillOutcome(new GameLiftError(GameLiftErrorType.SERVICE_CALL_FAILED)));
+                    return;
+                }
+
+                boolean value = (boolean) objects[0];
+
+                if (value) {
+                    try {
+                        Sdk.BackfillMatchmakingResponse.Builder builder = Sdk.BackfillMatchmakingResponse.newBuilder();
+                        JsonFormat.parser().merge((String) objects[1], builder);
+
+                        Sdk.BackfillMatchmakingResponse response = builder.build();
+
+                        StartMatchBackfillResult result = new StartMatchBackfillResult(response);
+
+                        future.set(new StartMatchBackfillOutcome(result));
+                    } catch (InvalidProtocolBufferException e) {
+                        future.set(new StartMatchBackfillOutcome(new GameLiftError(GameLiftErrorType.SERVICE_CALL_FAILED, e)));
+                    }
+                } else {
+                    future.set(new StartMatchBackfillOutcome(new GameLiftError(GameLiftErrorType.SERVICE_CALL_FAILED)));
                 }
             }
         };
@@ -150,34 +160,31 @@ public class AuxProxyMessageSender {
     }
 
     public DescribePlayerSessionsOutcome describePlayerSessions(DescribePlayerSessionsRequest request) {
-        Sdk.DescribePlayerSessionsRequest.Builder builder = Sdk.DescribePlayerSessionsRequest.newBuilder();
-        if (request.getGameSessionId() != null) {
-            builder.setGameSessionId(request.getGameSessionId());
-        }
 
-        if (request.getNextToken() != null) {
-            builder.setNextToken(request.getNextToken());
-        }
-
-        if (request.getPlayerId() != null) {
-            builder.setPlayerId(request.getPlayerId());
-        }
-
-        if (request.getPlayerSessionId() != null) {
-            builder.setPlayerSessionId(request.getPlayerSessionId());
-        }
-
-        if (request.getPlayerSessionStatusFilter() != null) {
-            builder.setPlayerSessionStatusFilter(request.getPlayerSessionStatusFilter());
-        }
-
-        builder.setLimit(request.getLimit());
-
-        Sdk.DescribePlayerSessionsRequest message = builder.build();
+        Sdk.DescribePlayerSessionsRequest message = request.createRequest();
 
         SettableFuture<DescribePlayerSessionsOutcome> future = SettableFuture.create();
         Ack ack = _createAckFunction(future);
         return emitEvent(message, ack, future, DESCRIBE_PLAYER_SESSION_ERROR);
+    }
+
+    public StartMatchBackfillOutcome backfillMatchmaking(StartMatchBackfillRequest request) {
+        Sdk.BackfillMatchmakingRequest message = request.createRequest();
+
+        SettableFuture<StartMatchBackfillOutcome> future = SettableFuture.create();
+        Ack ack = __createAckFunction(future);
+
+        return emitEvent(message, ack, future, START_MATCH_BACKFILL_ERROR);
+    }
+
+    public GenericOutcome stopMatchmaking(StopMatchBackfillRequest request) {
+        Sdk.StopMatchmakingRequest message = request.createRequest();
+
+        SettableFuture<GenericOutcome> future = SettableFuture.create();
+
+        Ack ack = createAckFunction(future);
+
+        return emitEvent(message, ack, future, STOP_MATCH_BACKFILL_ERROR);
     }
 
     public GenericOutcome reportHealth(boolean health) {

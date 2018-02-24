@@ -171,27 +171,21 @@ public class ServerState extends Async {
         return sender.describePlayerSessions(request);
     }
 
-    public StartMatchBackfillOutcome BackfillMatchmaking(StartMatchBackfillRequest request)
-    {
-        if (!networkInitialized)
-        {
+    public StartMatchBackfillOutcome BackfillMatchmaking(StartMatchBackfillRequest request) {
+        if (!networkInitialized) {
             return new StartMatchBackfillOutcome(new GameLiftError(GameLiftErrorType.NETWORK_NOT_INITIALIZED));
         }
-        else
-        {
-            return sender.BackfillMatchmaking(request);
+        else {
+            return sender.backfillMatchmaking(request);
         }
     }
 
-    public GenericOutcome StopMatchmaking(StopMatchBackfillRequest request)
-    {
-        if (!networkInitialized)
-        {
+    public GenericOutcome StopMatchmaking(StopMatchBackfillRequest request) {
+        if (!networkInitialized) {
             return new GenericOutcome(new GameLiftError(GameLiftErrorType.NETWORK_NOT_INITIALIZED));
         }
-        else
-        {
-            return sender.StopMatchmaking(request);
+        else {
+            return sender.stopMatchmaking(request);
         }
     }
 
@@ -359,5 +353,9 @@ public class ServerState extends Async {
         networkInitialized = false;
         network.disconnect();
         processReady = false;
+    }
+
+    public LongOutcome getTerminationTime() {
+        return new LongOutcome(terminationTime);
     }
 }

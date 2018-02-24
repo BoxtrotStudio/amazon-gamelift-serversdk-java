@@ -1,5 +1,6 @@
 package com.boxtrotstudio.aws.common;
 
+import com.amazon.whitewater.auxproxy.pbuffer.Sdk;
 import com.boxtrotstudio.aws.model.PlayerSessionStatus;
 
 public class PlayerSession {
@@ -14,10 +15,22 @@ public class PlayerSession {
     private long terminationTime;
     private PlayerSessionStatus status;
 
-    PlayerSession() {
+    public PlayerSession() {
         port = 0;
         creationTime = 0;
         terminationTime = 0;
+    }
+
+    public PlayerSession(Sdk.PlayerSession session) {
+        playerData = session.getPlayerData();
+        playerId = session.getPlayerId();
+        gameSessionId = session.getGameSessionId();
+        fleetId = session.getFleetId();
+        ipAddress = session.getIpAddress();
+        port = session.getPort();
+        creationTime = session.getCreationTime();
+        terminationTime = session.getTerminationTime();
+        status = PlayerSessionStatus.getPlayerSessionStatusForName(session.getStatus());
     }
 
     public String getPlayerId() {

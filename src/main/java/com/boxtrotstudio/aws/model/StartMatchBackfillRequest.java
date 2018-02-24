@@ -1,5 +1,7 @@
 package com.boxtrotstudio.aws.model;
 
+import com.amazon.whitewater.auxproxy.pbuffer.Sdk;
+
 public class StartMatchBackfillRequest {
     private String ticketId;
     private String gameSessionArn;
@@ -46,5 +48,19 @@ public class StartMatchBackfillRequest {
 
     public void setPlayers(Player[] players) {
         this.players = players;
+    }
+
+    public Sdk.BackfillMatchmakingRequest createRequest() {
+        Sdk.BackfillMatchmakingRequest.Builder builder = Sdk.BackfillMatchmakingRequest.newBuilder();
+
+        builder.setTicketId(ticketId)
+                .setGameSessionArn(gameSessionArn)
+                .setMatchmakingConfigurationArn(matchmakingConfigurationArn);
+
+        for (Player p : players) {
+            builder.addPlayers(p.createBufferedPlayer());
+        }
+
+        return builder.build();
     }
 }
